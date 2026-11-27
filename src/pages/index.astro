@@ -1,0 +1,142 @@
+---
+import DottedMap from 'dotted-map';
+import shieldIcon from 'remixicon/icons/System/shield-check-line.svg?raw';
+import arrowIcon from 'remixicon/icons/Arrows/arrow-right-up-line.svg?raw';
+import '../styles/site.css';
+
+const title = 'Threat Observatory';
+const subtitle = 'Independent tracking of hostile traffic on the open internet.';
+
+const map = new DottedMap({ height: 70, grid: 'vertical' });
+const points = map.getPoints();
+const W = Math.max(...points.map((p) => p.x)) + 1;
+const H = Math.max(...points.map((p) => p.y)) + 1;
+
+const hash = (x, y) => {
+  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return s - Math.floor(s);
+};
+const field = (x, y) =>
+  0.5 + 0.5 * Math.sin(x * 0.11 + Math.cos(y * 0.19) * 2.1) * Math.cos(y * 0.23 - x * 0.05);
+
+const levels = [0.05, 0.11, 0.2, 0.36];
+const size = 0.44;
+const layers = levels.map(() => []);
+for (const p of points) {
+  const v = field(p.x, p.y) * 0.75 + hash(p.x, p.y) * 0.25;
+  const i = Math.min(levels.length - 1, Math.floor(v * levels.length));
+  layers[i].push(`M${p.x - size / 2} ${p.y - size / 2}h${size}v${size}h-${size}z`);
+}
+
+const hubs = [
+  [38.95, -77.45], [32.78, -96.8], [34.05, -118.24], [43.65, -79.38], [-23.55, -46.63],
+  [19.43, -99.13], [51.51, -0.13], [52.37, 4.9], [50.11, 8.68], [48.86, 2.35],
+  [52.23, 21.01], [55.76, 37.62], [41.01, 28.98], [35.69, 51.39], [25.2, 55.27],
+  [6.52, 3.38], [-26.2, 28.05], [19.08, 72.88], [1.35, 103.82], [22.32, 114.17],
+  [39.9, 116.4], [37.57, 126.98], [35.68, 139.69], [-6.21, 106.85], [-33.87, 151.21],
+  [59.33, 18.07], [30.04, 31.24], [13.76, 100.5],
+];
+const pins = hubs.map(([lat, lng]) => map.getPin({ lat, lng }));
+
+const links = [
+  [11, 0], [20, 7], [21, 18], [13, 8], [15, 6], [22, 2], [4, 0], [17, 8],
+  [19, 24], [12, 25], [5, 1], [23, 18], [14, 9], [27, 19], [3, 10], [16, 6],
+];
+const arcs = links.map(([a, b]) => {
+  const p = pins[a];
+  const q = pins[b];
+  const dx = q.x - p.x;
+  const dy = q.y - p.y;
+  const d = Math.hypot(dx, dy);
+  const cx = (p.x + q.x) / 2;
+  const cy = (p.y + q.y) / 2 - d * 0.32;
+  return `M${p.x} ${p.y}Q${cx.toFixed(2)} ${cy.toFixed(2)} ${q.x} ${q.y}`;
+});
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={subtitle} />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#050505" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="canonical" href="https://threatobservatory.org/" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  </head>
+  <body>
+    <div class="map" aria-hidden="true">
+      <svg viewBox={`-2 -2 ${W + 4} ${H + 4}`} preserveAspectRatio="xMidYMid slice">
+        {layers.map((d, i) => (
+          <path class="map-layer" d={d.join('')} fill="#f4f4f5" fill-opacity={levels[i]} />
+        ))}
+        <g class="arcs">
+          {arcs.map((d) => <path class="arc" d={d} />)}
+        </g>
+        <g class="hubs">
+          {pins.map((p) => (
+            <g class="hub">
+              <rect class="ring" x={p.x - 0.45} y={p.y - 0.45} width="0.9" height="0.9" />
+              <rect class="dot" x={p.x - 0.4} y={p.y - 0.4} width="0.8" height="0.8" />
+            </g>
+          ))}
+        </g>
+      </svg>
+    </div>
+
+    <div class="frame" aria-hidden="true">
+      <span class="corner tl"></span><span class="corner tr"></span>
+      <span class="corner bl"></span><span class="corner br"></span>
+    </div>
+
+    <header class="top" data-reveal>
+      <a class="mark" href="/" aria-label={title}>
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <path d="M48.74 29.05A17 17 0 1 1 34.95 15.26" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="square" />
+          <rect x="29" y="29" width="6" height="6" fill="currentColor" />
+          <rect class="mark-pixel" x="39.5" y="15.5" width="9" height="9" />
+        </svg>
+      </a>
+      <span class="status" aria-hidden="true"><span class="status-dot"></span></span>
+    </header>
+
+    <main class="hero">
+      <h1 class="title">
+        <span class="line" data-reveal>Threat</span>
+        <span class="line italic" data-reveal>Observatory.</span>
+      </h1>
+      <p class="subtitle" data-reveal>{subtitle}</p>
+    </main>
+
+    <footer class="strip">
+      <span class="cell icon" aria-hidden="true" data-reveal set:html={shieldIcon} />
+      <a
+        class="cell badge"
+        data-reveal
+        href="https://www.abuseipdb.com/user/378170"
+        title="AbuseIPDB is an IP address blacklist for webmasters and sysadmins to report IP addresses engaging in abusive behavior on their networks"
+        referrerpolicy="strict-origin"
+      >
+        <img
+          src="https://www.abuseipdb.com/contributor/378170.svg?theme=dark"
+          alt="AbuseIPDB Contributor Badge"
+          width="618"
+          height="155"
+          decoding="async"
+          referrerpolicy="strict-origin"
+        />
+        <span class="badge-arrow" aria-hidden="true" set:html={arrowIcon} />
+      </a>
+      <span class="cell icon" aria-hidden="true" data-reveal>
+        <span class="pulse"></span>
+      </span>
+    </footer>
+
+    <script src="../scripts/observe.js"></script>
+  </body>
+</html>
